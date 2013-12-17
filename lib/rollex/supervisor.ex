@@ -1,4 +1,4 @@
-defmodule Rollex.Supervisor do
+defmodule Rollex.IRC.Supervisor do
   use Supervisor.Behaviour
 
   def start_link do
@@ -7,6 +7,7 @@ defmodule Rollex.Supervisor do
 
   def init([]) do
     children = [
+      #worker(Rollex.IRC, [spid, "ssl://donger.alphajanne.com:6697"])
       # Define workers and child supervisors to be supervised
       # worker(Rollex.Worker, [])
     ]

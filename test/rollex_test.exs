@@ -78,7 +78,6 @@ defmodule RollexTest do
   end
 
   test "should start pong worker" do
-    isup = Supervisor.Behaviour.supervisor(Rollex.IRC.Supervisor, [], restart: :permanent)
     {:ok, spid} = :supervisor.start_link(Rollex.IRC.Supervisor, [])
     ponger = Rollex.IRC.Worker.new.module(Rollex.Worker.Pong).interests([:ping]) |>
       Rollex.IRC.start_worker(spid)

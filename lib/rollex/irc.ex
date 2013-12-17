@@ -49,25 +49,28 @@ defmodule Rollex.IRC do
     wsup = Supervisor.Behaviour.supervisor(
       Rollex.Worker.Supervisor, [],
       restart: :permanent)
-    {:ok, pid} = :supervisor.start_child(state.irc_sup, wsup) # was: start_child(spid, wsup)
-    IO.puts "Started worker supervisor"
+    {:ok, pid} = :supervisor.start_child(state.irc_sup, wsup)
 
     state = Enum.map(state.config.workers,
       &start_worker(&1, pid)) |> state.config.workers |> state.config
     state = state.worker_sup(pid)
-    IO.inspect state
     #self <- {:start_processing, state}
     state.config.user |> login(state.server)
     process(state, [])
     {:noreply, state}
   end
 
+  # TODO: This is unused at the moment. Remove or use instead of
+  # process in the above function (handle_info)
   def handle_info({:start_processing, state}, _s) do
     IO.puts "Starting to read messages from server"
     process(state, [])
     {:noreply, state}
   end
 
+  @doc """
+  Starts the Worker process
+  """
   def start_worker(Worker[interests: []], _pid) do :ok end
   def start_worker(worker, pid) do
     wcfg = Supervisor.Behaviour.worker(worker.module, [], [])
@@ -75,11 +78,17 @@ defmodule Rollex.IRC do
     worker.pid(pid)
   end
 
+  @doc """
+  Connect to the serveruri with a default configuration
+  """
   def connect(serveruri) do
     connect(serveruri,
-      Config.new.user(User.new).channels(["#vorce"]))
+      Config.new.user(User.new).channels(["#rollex"]))
   end
 
+  @doc """
+  Connect to the serveruri with specified config
+  """
   def connect(serveruri, config) do
     {:ok, sock} = Socket.connect(serveruri)
     Socket.options!(sock, packet: :line)
@@ -88,6 +97,10 @@ defmodule Rollex.IRC do
       ServerInfo.new.uri(serveruri).socket(sock)).config(config)}
   end
 
+  @doc """
+  Parses lines from the irc server socket into an IRC.Command and
+  then sends the command to all interested Workers
+  """
   def process(irc_state, lines) when is_list(lines) do
     case irc_state.server.socket |> Socket.Stream.recv do
       {:error, message} ->
@@ -105,12 +118,18 @@ defmodule Rollex.IRC do
     end
   end
 
+  @doc """
+  Is the IRC.Worker interested in the message type or not
+  """
   def interested?(Worker[interests: [:all]], _t) do true end
   def interested?(Worker[interests: interests], type) do
     Enum.member?(interests, type)
   end
   def interested?(_w, _t) do false end
 
+  @doc """
+  Sends an IRC.Command record to a Worker process
+  """
   def worker_command(worker, command, state) do
     cond do
       worker.pid != nil ->
@@ -121,9 +140,16 @@ defmodule Rollex.IRC do
     end
   end
 
+  @doc """
+  Is the string prefixed with an ":"?
+  """
   def prefixed?(":" <> _rest) do true end
   def prefixed?(_nope) do false end
 
+  @doc """
+  Sends a PONG to the irc server. TODO: Should this be moved to the
+  pong worker?
+  """
   def pong(server, params) do
     irc_command(:pong, params) |> send(server)
   end
@@ -135,6 +161,9 @@ defmodule Rollex.IRC do
     Command.new.type(type).params(params)
   end
 
+  @doc """
+  sends an IRC.Command to the irc server
+  """
   def send(command, server) do
     cmd = command |> outbound
     IO.puts "Sending command: " <> cmd
@@ -175,7 +204,10 @@ defmodule Rollex.IRC do
     command_string |> String.downcase |> binary_to_atom
   end
 
-  # ":sherlockj!~sherlock_@host.isp.yeah.com"
+  @doc """
+  Creates an IRC.User record from an irc user string
+  (Ex: ":sherlockj!~sherlock_@host.isp.yeah.com")
+  """
   def get_user(":" <> raw_user) do
     result = raw_user |> String.split %r"!|@"
     cond do
@@ -187,26 +219,11 @@ defmodule Rollex.IRC do
     end
   end
 
+  @doc """
+  sends login information to the irc server (NICK and USER)
+  """
   def login(user, server) when is_record(user) do
     irc_command(:nick, [user.nick]) |> send(server)
     irc_command(:user, [user.name, user.nick, "0", ":" <> user.realname]) |> send(server)
-  end
-
-  def test() do
-    Socket.Manager.start(nil, nil)
-    :ssl.start()
-    uri = "ssl://donger.alphajanne.com:6697"
-    {:ok, state} = Rollex.IRC.connect(uri)
-    User.new |> login(state.server)
-    #state
-    Rollex.IRC.process(state, [])
-  end
-
-  def test2() do
-    Socket.Manager.start(nil, nil)
-    :ssl.start()
-    uri = "ssl://donger.alphajanne.com:6697"
-    { :ok, pid } = :gen_server.start_link(Rollex.IRC, [self, uri], [])
-    #:gen_server.cast(pid, {})
   end
 end

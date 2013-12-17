@@ -1,0 +1,7 @@
+isup = Supervisor.Behaviour.supervisor(Rollex.IRC.Supervisor, [], restart: :permanent)
+{:ok, spid} = :supervisor.start_link(Rollex.IRC.Supervisor, [])
+iw = Supervisor.Behaviour.worker(Rollex.IRC, [[spid, "ssl://donger.alphajanne.com:6697"]], [])
+Socket.Manager.start(nil, nil)
+:ssl.start()
+{:ok, ipid} = :supervisor.start_child(spid, iw)
+

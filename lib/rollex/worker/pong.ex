@@ -1,8 +1,8 @@
 defmodule Rollex.Worker.Pong do
   use GenServer.Behaviour
 
-  def start_link(args) do
-    :gen_server.start_link(__MODULE__, args, [])
+  def start_link() do
+    :gen_server.start_link(__MODULE__, [], [])
   end
 
   def init(_args) do
@@ -10,6 +10,7 @@ defmodule Rollex.Worker.Pong do
     {:ok, []}
   end
 
+  
   def handle_cast({Rollex.IRC.Command[type: :ping] = cmd, istate}, _s) do
     IO.puts "Pong worker received ping from: " <> Enum.join(cmd.params, " ")
     Rollex.IRC.pong(istate.server, cmd.params) 

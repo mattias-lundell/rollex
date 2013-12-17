@@ -40,7 +40,6 @@ defmodule Rollex.IRC do
     {:ok, state} = connect(uri)
     state = spid |> state.irc_sup
     self <- {:start_worker_sup}
-    #process(state, [])
     {:ok, state}
   end
 
@@ -58,7 +57,8 @@ defmodule Rollex.IRC do
     state = state.worker_sup(pid)
     IO.inspect state
     #self <- {:start_processing, state}
-    process state, []
+    state.config.user |> login(state.server)
+    process(state, [])
     {:noreply, state}
   end
 
@@ -77,8 +77,7 @@ defmodule Rollex.IRC do
 
   def connect(serveruri) do
     connect(serveruri,
-      Config.new.user(
-        User.new).channels(["#vorce"]))
+      Config.new.user(User.new).channels(["#vorce"]))
   end
 
   def connect(serveruri, config) do
@@ -116,7 +115,7 @@ defmodule Rollex.IRC do
     cond do
       worker.pid != nil ->
         IO.puts "Sending command: " <> command.raw <> " to a worker"
-        :gen_server.cast({command, state})
+        :gen_server.cast(worker.pid, {command, state})
       worker.pid == nil ->
         :ok
     end
@@ -124,8 +123,6 @@ defmodule Rollex.IRC do
 
   def prefixed?(":" <> _rest) do true end
   def prefixed?(_nope) do false end
-
-  def channel_message?(_line) do false end
 
   def pong(server, params) do
     irc_command(:pong, params) |> send(server)

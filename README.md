@@ -7,7 +7,7 @@ Goal: Extendable hot swappable IRC bot.
 ```
 [ Rollex app ]
   |
-  [IRC supervisor]
+  [Server supervisor]
    |  |     |   |
    i1 |     i2  |
       |
@@ -15,15 +15,15 @@ Goal: Extendable hot swappable IRC bot.
     |   |
     m1  m2
 
-i = IRC worker, one per server
+i = Server worker (one per IRC server)
 
-[ IRC worker ]
+[ Server worker ]
         +--------> [ Msg worker supervisor ]
                      |   |   |   |   |
                      m1  m2  m3  m4  mn
 ```
 
-### IRC workers:
+### Server workers:
 
   * parameters: server uri, config
 
@@ -40,9 +40,9 @@ i = IRC worker, one per server
   0. On startup the Message worker supervisor is started,
     and all Message workers are created and added to it
 
-  1. IRC process connect, logs in, start reading from server.
+  1. Server process connect, logs in, start reading from IRC server.
 
-  2. Receive line from server, parse it into a IRCCommand struct.
+  2. Receive line from server, parse it into a IRC.Command record.
   
   3. Send all modules interested in this command type an async message with
     the command and the IRCState (containing config, server socket etc).
@@ -55,7 +55,7 @@ parameters: none
 
 Will receive messages of the type that it was interested in together
 with IRCState
-{IRCCommand, IRCState}
+{IRC.Command, IRCState}
 Can do whatever with it...
 
 Example workers:
@@ -70,3 +70,21 @@ Example workers:
     then parses the rest to deduce some action. Can be as advanced as
     needed (starting another supervisor subtree with additional
     custom-command workers for example)
+
+## How to run Rollex
+
+At the moment there is no application layer. To start Rollex issue the
+following commands
+
+First start the Elixir REPL
+
+    iex -S mix
+
+Then:
+
+    {:ok, spid} = :supervisor.start_link(Rollex.Server.Supervisor, [])
+    iw = Supervisor.Behaviour.worker(Rollex.Server, [[spid, "ssl://donger.alphajanne.com:6697"]], [])
+    Socket.Manager.start(nil, nil)
+    :ssl.start()
+    {:ok, ipid} = :supervisor.start_child(spid, iw)
+

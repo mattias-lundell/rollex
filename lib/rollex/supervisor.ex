@@ -1,4 +1,4 @@
-defmodule Rollex.IRC.Supervisor do
+defmodule Rollex.Server.Supervisor do
   use Supervisor.Behaviour
 
   def start_link do

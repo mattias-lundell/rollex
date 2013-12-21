@@ -8,7 +8,7 @@ defmodule RollexTest do
 
   test "should connect to an SSL IRC server" do
     server = "ssl://chat.freenode.net:6697"
-    {reply, _s} = Rollex.IRC.connect(server)
+    {reply, _s} = Rollex.Server.connect(server)
     assert reply == :ok
   end
 
@@ -30,7 +30,7 @@ defmodule RollexTest do
 
   test "should parse inbound server message" do
     msg = ":drop.disrespect.com NOTICE Auth :*** Looking up your hostname"
-    cmd = msg |> Rollex.IRC.inbound
+    cmd = msg |> Rollex.Server.inbound
 
     assert cmd.user.name == "drop.disrespect.com"
     assert cmd.type == :notice
@@ -42,14 +42,14 @@ defmodule RollexTest do
     type = "PONG"
     from = ":some.server.com"
     cmd = type |> Rollex.IRC.command_type |>
-      Rollex.IRC.irc_command([from])
+      Rollex.IRC.command([from])
 
     assert cmd |> Rollex.IRC.outbound == type <> " " <> from <> "\r\n"
   end
 
   test "should parse inbound raw message to record" do
     raw = "PING :server.host.com"
-    cmd = Rollex.IRC.inbound(raw)
+    cmd = Rollex.Server.inbound(raw)
 
     assert is_record(cmd)
     assert cmd.type == :ping
@@ -61,7 +61,7 @@ defmodule RollexTest do
 
   test "should create irc command of requested type" do
     params = [":hello.there"]
-    cmd = Rollex.IRC.irc_command(:pong, params)
+    cmd = Rollex.IRC.command(:pong, params)
 
     assert is_record(cmd)
     assert cmd.type == :pong
@@ -80,10 +80,10 @@ defmodule RollexTest do
   test "should start pong worker" do
     {:ok, spid} = :supervisor.start_link(Rollex.IRC.Supervisor, [])
     ponger = Rollex.IRC.Worker.new.module(Rollex.Worker.Pong).interests([:ping]) |>
-      Rollex.IRC.start_worker(spid)
+      Rollex.Server.start_worker(spid)
 
-    assert Rollex.IRC.worker_command(ponger,
-      Rollex.IRC.irc_command(:ping, [":foo.bar"]),
-      Rollex.IRC.State.new)
+    assert Rollex.Server.worker_command(ponger,
+      Rollex.IRC.command(:ping, [":foo.bar"]),
+      Rollex.Server.State.new)
   end
 end

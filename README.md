@@ -83,7 +83,7 @@ First start the Elixir REPL
 Then:
 
     {:ok, spid} = :supervisor.start_link(Rollex.Server.Supervisor, [])
-    iw = Supervisor.Behaviour.worker(Rollex.Server, [[spid, "ssl://donger.alphajanne.com:6697"]], [])
+    iw = Supervisor.Behaviour.worker(Rollex.Server, [[spid, "ssl://chat.freenode.net:6697"]], [])
     Socket.Manager.start(nil, nil)
     :ssl.start()
     {:ok, ipid} = :supervisor.start_child(spid, iw)

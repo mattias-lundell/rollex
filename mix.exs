@@ -19,6 +19,7 @@ defmodule Rollex.Mixfile do
   # To specify particular versions, regardless of the tag, do:
   # { :barbat, "~> 0.1", github: "elixir-lang/barbat.git" }
   defp deps do
-    [{:socket, github: "meh/elixir-socket"}]
+    [{:socket, github: "meh/elixir-socket"},
+    {:exconfig, "0.0.1", git: "https://github.com/yrashk/exconfig.git"}]
   end
 end

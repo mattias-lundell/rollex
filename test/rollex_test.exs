@@ -12,22 +12,6 @@ defmodule RollexTest do
     assert reply == :ok
   end
 
-  # Learning test
-  #test "should receive strings from server" do
-  #  server = "ssl://chat.freenode.net:6697"
-  #  {:ok, state} = Rollex.IRC.connect(server)
-  #  {reply, _m, lines} = Rollex.IRC.process(state, [])
-  #  IO.puts lines
-  #  assert reply == :error
-  #end
-
-  # Learning test for elixir-socket
-  #test "should connect to an SSL IRC server socket" do
-  #  server = "ssl://chat.freenode.net:6697"
-  #  {reply, _sock} = Socket.connect(server)
-  #  assert reply == :ok
-  #end
-
   test "should parse inbound server message" do
     msg = ":drop.disrespect.com NOTICE Auth :*** Looking up your hostname"
     cmd = msg |> Rollex.Server.inbound
@@ -36,7 +20,6 @@ defmodule RollexTest do
     assert cmd.type == :notice
     assert cmd.params == String.split("Auth :*** Looking up your hostname")
   end
-
 
   test "should create string for sending" do
     type = "PONG"
@@ -78,12 +61,24 @@ defmodule RollexTest do
   end
 
   test "should start pong worker" do
-    {:ok, spid} = :supervisor.start_link(Rollex.IRC.Supervisor, [])
-    ponger = Rollex.IRC.Worker.new.module(Rollex.Worker.Pong).interests([:ping]) |>
-      Rollex.Server.start_worker(spid)
+    {:ok, spid} = :supervisor.start_link(Rollex.Server.Supervisor, [])
+    ponger = Rollex.IRC.Worker.new.module(Rollex.Worker.Pong).interests(
+      [:ping]) |> Rollex.Server.start_worker(spid)
 
     assert Rollex.Server.worker_command(ponger,
       Rollex.IRC.command(:ping, [":foo.bar"]),
       Rollex.Server.State.new)
+  end
+
+  test "should load default configuration" do
+    cfg = Rollex.Config.file! "example.config.exs"
+
+    assert cfg.servers == ["ssl://chat.freenode.net:6697"]
+    assert cfg.channels == ["#rollex"]
+    assert Enum.count(cfg.workers) == 1
+    assert is_record(Enum.first(cfg.workers))
+    assert is_record(cfg.user)
+    assert cfg.user.nick == "rollex"
+    assert cfg.user.name == "rollex"
   end
 end
